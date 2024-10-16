@@ -16,8 +16,10 @@ const cookieOptions = {
     httpOnly: true,
 };
 
-const register = async (req: Request, res: Response) => {
+const register = async (req: any, res: any) => {
     try {
+        req = req as Request;
+        res = res as Response;
         const { name, email, password } = req.body;
         const userExists = await User.findOne({ email });
         if (userExists) {
@@ -60,8 +62,10 @@ const createSendToken = async (user: IUser, res: Response) => {
     return token;
 };
 
-const login = async (req: Request, res: Response) => {
+const login = async (req: any, res: any) => {
     try {
+        req = req as Request;
+        res = res as Response;
         const { email, password } = req.body;
         const user = await User.findOne({ email }).select("+password");
         if (
