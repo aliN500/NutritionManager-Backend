@@ -10,6 +10,7 @@ import ILoginResponse from "../models/responses/ILoginReponse";
 import ILoginRequest from "../models/requests/ILoginRequest";
 import IForgetPasswordRequest from "../models/requests/IForgetPasswordRequest";
 import IRegisterRequest from "../models/requests/IRegisterRequest";
+import MailService from "../services/MailService";
 
 const jwtSecret = config.JWT_SECRET as string;
 const COOKIE_EXPIRATION_DAYS = 90; // cookie expiration in days
@@ -106,17 +107,16 @@ const forgetPassword = async (req: any, res: any) => {
     if (!user) {
       throw new ApiError(400, "Incorrect email");
     }
-    const token = await createSendToken(user!, res);
-    const Response: IBaseResponse<ILoginResponse> = {
-      data: {
-        id: user.id,
-        token,
-      },
-      message: "User logged in successfully!",
-      status: 200,
+    const mailOptions = {
+      from: "The Idea project",
+      to: "majd.im76.im@gmail.com",
+      subject: "My first Email!!!",
+      text: "This is my first email. I am so excited!",
     };
+    const msg = new MailService();
+    msg.sendMessage(mailOptions);
 
-    return res.json(Response);
+    return res.json({ Response: true });
   } catch (error: any) {
     return res.json({
       status: 500,
@@ -125,7 +125,4 @@ const forgetPassword = async (req: any, res: any) => {
   }
 };
 
-export default {
-  register,
-  login,
-};
+export { register, login, forgetPassword };

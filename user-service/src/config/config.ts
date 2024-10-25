@@ -10,12 +10,16 @@ const {
   NODE_ENV,
   MESSAGE_BROKER_URL,
   FRONT_END_URL,
+  EMAIL_PASSWORD,
+  EMAIL,
 } = process.env;
 const corsOptions = {
   origin: FRONT_END_URL,
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
 };
 export default {
+  EMAIL_PASSWORD,
+  EMAIL,
   MONGO_URI,
   PORT,
   JWT_SECRET,
