@@ -21,4 +21,10 @@ export default class MailService {
       console.log(err, info);
     });
   }
+  sendConfirmationEmail(mailOptions: Mail.Options) {
+    this.transporter.sendMail(mailOptions, (err: any, info: any) => {
+      console.log(err, info);
+    });
+  }
 }
+export const Mailer = new MailService();

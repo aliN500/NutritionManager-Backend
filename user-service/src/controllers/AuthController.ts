@@ -1,62 +1,15 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { User } from "../database";
+import { User, IUser } from "../database";
 import { ApiError, encryptPassword, isPasswordMatch } from "../utils";
 import config from "../config/config";
-import { IUser } from "../database";
-import IRegisterResponse from "../models/responses/IRegisterResponse";
 import { IBaseResponse } from "../models/IBaseResponse";
-import ILoginResponse from "../models/responses/ILoginReponse";
-import ILoginRequest from "../models/requests/ILoginRequest";
-import IForgetPasswordRequest from "../models/requests/IForgetPasswordRequest";
-import IRegisterRequest from "../models/requests/IRegisterRequest";
-import MailService from "../services/MailService";
+import { Mailer } from "../services/MailService";
+import UsersService from "../services/UsersService";
+import { IForgetPasswordRequest, ILoginRequest, IRegisterRequest } from "../models/requests";
+import { ILoginResponse, IRegisterResponse } from "../models/responses";
 
 const jwtSecret = config.JWT_SECRET as string;
-const COOKIE_EXPIRATION_DAYS = 90; // cookie expiration in days
-const expirationDate = new Date(
-  Date.now() + COOKIE_EXPIRATION_DAYS * 24 * 60 * 60 * 1000
-);
-const cookieOptions = {
-  expires: expirationDate,
-  secure: false,
-  httpOnly: true,
-};
-
-const register = async (req: any, res: any) => {
-  try {
-    req = req as Request;
-    res = res as Response;
-    const request = req.body as IRegisterRequest;
-    const userExists = await User.findOne({ email: request.email });
-    if (userExists) {
-      throw new ApiError(400, "User already exists!");
-    }
-
-    const user = await User.create({
-      name: request.name,
-      email: request.email,
-      password: await encryptPassword(request.password),
-    });
-
-    const Response: IBaseResponse<IRegisterResponse> = {
-      data: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
-      message: "User registered successfully!",
-      status: 200,
-    };
-    return res.json(Response);
-  } catch (error: any) {
-    return res.json({
-      status: 500,
-      message: error.message,
-    });
-  }
-};
-
 const createSendToken = async (user: IUser, res: Response) => {
   const { name, email, id } = user;
   const token = jwt.sign({ name, email, id }, jwtSecret, {
@@ -68,16 +21,74 @@ const createSendToken = async (user: IUser, res: Response) => {
   return token;
 };
 
+const COOKIE_EXPIRATION_DAYS = 90; // cookie expiration in days
+const expirationDate = new Date(
+  Date.now() + COOKIE_EXPIRATION_DAYS * 24 * 60 * 60 * 1000
+);
+const cookieOptions = {
+  expires: expirationDate,
+  secure: false,
+  httpOnly: true,
+};
+
+const userService = new UsersService({ usersRepository: User, mailer: Mailer });
+
+const register = async (req: any, res: any) => {
+  try {
+    req = req as Request;
+    res = res as Response;
+    const request = req.body as IRegisterRequest;
+    const userExists = await userService.findByEmail(request.email);
+    if (userExists) {
+      throw new ApiError(400, "User already exists!");
+    }
+
+    const user = await userService.createUser({
+      active: false,
+      deleted: false,
+      name: request.name,
+      email: request.email,
+      password: await encryptPassword(request.password)
+    });
+    if (user) {
+      const Response: IBaseResponse<IRegisterResponse> = {
+        data: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+        },
+        message: "User registered successfully!",
+        status: 200,
+      };
+      return res.json(Response);
+    } else {
+      return {
+        data: null,
+        message: "Failed to register user!",
+        status: 200,
+      };
+    }
+  } catch (error: any) {
+    return res.json({
+      status: 500,
+      message: error.message,
+    });
+  }
+};
+
+
+
 const login = async (req: any, res: any) => {
   try {
     req = req as Request;
     res = res as Response;
     const request = req.body as ILoginRequest;
-    const user = await User.findOne({ email: request.email }).select(
-      "+password"
-    );
+    const user = await userService.findByEmail(request.email, true)
     if (!user || !(await isPasswordMatch(request.password, user.password))) {
       throw new ApiError(400, "Incorrect email or password");
+    }
+    if (user.active) {
+      throw new ApiError(400, "User is not active");
     }
     const token = await createSendToken(user!, res);
     const Response: IBaseResponse<ILoginResponse> = {
@@ -103,18 +114,18 @@ const forgetPassword = async (req: any, res: any) => {
     req = req as Request;
     res = res as Response;
     const request = req.body as IForgetPasswordRequest;
-    const user = await User.findOne({ email: request.email });
+    const user = await userService.findByEmail(request.email);
     if (!user) {
       throw new ApiError(400, "Incorrect email");
     }
     const mailOptions = {
-      from: "The Idea project",
-      to: "majd.im76.im@gmail.com",
-      subject: "My first Email!!!",
+      from: "Nutrition manager",
+      to: user.email,
+      subject: "Reset password",
       text: "This is my first email. I am so excited!",
     };
-    const msg = new MailService();
-    msg.sendMessage(mailOptions);
+
+    Mailer.sendMessage(mailOptions);
 
     return res.json({ Response: true });
   } catch (error: any) {
