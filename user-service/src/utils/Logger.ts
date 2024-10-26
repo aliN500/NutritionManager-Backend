@@ -3,20 +3,41 @@ export default class Logger {
   constructor(container: string) {
     this.container = container;
   }
-  logError(error: any): void {
-    console.error(`[${this.container}]`, error);
+  error(error: any): void {
+    console.error(`[${this.container}] `, {
+      error,
+      date: (new Date()).toUTCString(),
+      pid: process.pid
+    });
   }
-  logDebug(data: any): void {
-    console.debug(`[${this.container}]`, data);
+  debug(data: any): void {
+    console.debug(`[${this.container}] `, {
+      data,
+      date: (new Date()).toUTCString(),
+      pid: process.pid
+    });
   }
-  logWarning(data: any): void {
-    console.warn(`[${this.container}]`, data);
+  warning(data: any): void {
+    console.warn(`[${this.container}] `, {
+      warning: data,
+      date: (new Date()).toUTCString(),
+      pid: process.pid
+    });
   }
-  logInfo(data: any): void {
-    console.info(`[${this.container}]`, data);
+  info(data: any): void {
+    console.info(`[${this.container}] `, {
+      info: data,
+      date: (new Date()).toUTCString(),
+      pid: process.pid
+
+    });
   }
-  logTrace(data: any): void {
-    console.trace(`[${this.container}]`, data);
+  trace(data: any): void {
+    console.trace(`[${this.container}] `, {
+      trace: data,
+      date: (new Date()).toUTCString(),
+      pid: process.pid
+    });
   }
 }
 export type LoggerLevel =

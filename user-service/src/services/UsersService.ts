@@ -27,7 +27,7 @@ class UsersService {
   async createUser(user: UserModel): Promise<IUser> {
     try {
       const createdUser = await this.usersRepository.create(user);
-      this.logger.logInfo(`User created: ${user}`);
+      this.logger.info(`User created: ${user}`);
 
       const mailOptions = {
         from: "Nutrition manager",
@@ -37,7 +37,7 @@ class UsersService {
       };
 
       await this.mailer.sendConfirmationEmail(mailOptions);
-      this.logger.logInfo(`Confirmation link sent: ${user}`);
+      this.logger.info(`Confirmation link sent: ${user}`);
 
       return createdUser;
     } catch (ex) {
