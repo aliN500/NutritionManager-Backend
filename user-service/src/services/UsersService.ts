@@ -1,8 +1,8 @@
 import { Model } from "mongoose";
 import { IUser } from "../database";
-import MailService from "./MailService";
+import MailService, { Mailer } from "./MailService";
 import Logger from "../utils/Logger";
-import { UserModel } from "../database/models/UserModel";
+import User, { UserModel } from "../database/models/UserModel";
 class UsersService {
   usersRepository: Model<IUser>;
   mailer: MailService;
@@ -48,5 +48,5 @@ class UsersService {
     }
   }
 }
-
-export default UsersService;
+const userService = new UsersService({ usersRepository: User, mailer: Mailer });
+export default userService;

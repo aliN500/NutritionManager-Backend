@@ -5,7 +5,7 @@ import { ApiError, encryptPassword, isPasswordMatch } from "../utils";
 import config from "../config/config";
 import { IBaseResponse } from "../models/IBaseResponse";
 import { Mailer } from "../services/MailService";
-import UsersService from "../services/UsersService";
+import userService from "../services/UsersService";
 import { IForgetPasswordRequest, ILoginRequest, IRegisterRequest } from "../models/requests";
 import { ILoginResponse, IRegisterResponse } from "../models/responses";
 
@@ -30,8 +30,6 @@ const cookieOptions = {
   secure: false,
   httpOnly: true,
 };
-
-const userService = new UsersService({ usersRepository: User, mailer: Mailer });
 
 const register = async (req: any, res: any) => {
   try {
