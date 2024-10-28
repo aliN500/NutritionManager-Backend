@@ -47,6 +47,24 @@ class UsersService {
     }
   }
 
+  async verifyUser(token: string): Promise<IUser | null> {
+    if (!token)
+      throw new Error("Invalid token");
+
+    const decoded = this.decodeToken(token);
+    if (decoded && decoded.email && decoded.name && decoded.id) {
+      const user = await this.findByEmail(decoded.email);
+      console.log({ user, decoded });
+      if (user && !user?.verified || !user?.active) {
+        const res = await this.usersRepository.updateOne({ email: decoded.email, _id: decoded.id }, { verified: true, active: true });
+      }
+      return user;
+    }
+    else {
+      throw new Error("Invalid token");
+    }
+  }
+
   async createSendToken(user: { id: string, email: string, name: string }): Promise<string> {
     const jwtSecret = config.JWT_SECRET as string;
     const { name, email, id } = user;
@@ -55,6 +73,12 @@ class UsersService {
     });
     return token;
   };
+
+  decodeToken(token: string): { id: string, email: string, name: string } {
+    const jwtSecret = config.JWT_SECRET as string;
+    const decoded = jwt.verify(token, jwtSecret) as { id: string, email: string, name: string };
+    return decoded;
+  }
 }
 const userService = new UsersService({ usersRepository: User, mailer: Mailer });
 export default userService;

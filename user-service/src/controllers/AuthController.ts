@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import { User, IUser } from "../database";
 import { ApiError, encryptPassword, isPasswordMatch } from "../utils";
 import config from "../config/config";
 import { IBaseResponse } from "../models/IBaseResponse";
@@ -53,8 +52,6 @@ const register = async (req: any, res: any) => {
   }
 };
 
-
-
 const login = async (req: any, res: any) => {
   try {
     req = req as Request;
@@ -98,6 +95,24 @@ const login = async (req: any, res: any) => {
   }
 };
 
+const verifyUser = async (req: any, res: any) => {
+  try {
+    req = req as Request;
+    res = res as Response;
+    const token = req.query.token;
+    const user = await userService.verifyUser(token);
+    if (user && user.id) {
+      return res.json({ Response: true });
+    }
+    return res.json({ Response: false });
+  } catch (error: any) {
+    return res.json({
+      status: 500,
+      message: error.message,
+    });
+  }
+};
+
 const forgetPassword = async (req: any, res: any) => {
   try {
     req = req as Request;
@@ -125,4 +140,4 @@ const forgetPassword = async (req: any, res: any) => {
   }
 };
 
-export { register, login, forgetPassword };
+export { verifyUser, register, login, forgetPassword };
