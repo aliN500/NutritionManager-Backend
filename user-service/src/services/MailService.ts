@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import Mail from "nodemailer/lib/mailer";
 import config from "../config/config";
+import confirmationTemplate from "../utils/EmailTemplates";
 export default class MailService {
   transporter;
   constructor() {
@@ -21,7 +22,14 @@ export default class MailService {
       console.log(err, info);
     });
   }
-  sendConfirmationEmail(mailOptions: Mail.Options) {
+
+  sendConfirmationEmail(email: string, YOUR_VERIFICATION_LINK: string) {
+    const mailOptions: Mail.Options = {
+      from: config.APPNAME,
+      to: email,
+      html: confirmationTemplate(YOUR_VERIFICATION_LINK, config.YOUR_COMPANY_LOGO_URL),
+      subject: "Confirmation email",
+    };
     this.transporter.sendMail(mailOptions, (err: any, info: any) => {
       console.log(err, info);
     });

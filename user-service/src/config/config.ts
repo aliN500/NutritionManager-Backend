@@ -12,12 +12,18 @@ const {
   FRONT_END_URL,
   EMAIL_PASSWORD,
   EMAIL,
+  BACK_END_LINK,
+  YOUR_COMPANY_LOGO_URL,
+  APPNAME
 } = process.env;
 const corsOptions = {
   origin: FRONT_END_URL,
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
 };
 export default {
+  YOUR_COMPANY_LOGO_URL,
+  BACK_END_LINK,
+  APPNAME,
   EMAIL_PASSWORD,
   EMAIL,
   MONGO_URI,

@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
 import { User, IUser } from "../database";
 import { ApiError, encryptPassword, isPasswordMatch } from "../utils";
 import config from "../config/config";
@@ -9,27 +8,6 @@ import userService from "../services/UsersService";
 import { IForgetPasswordRequest, ILoginRequest, IRegisterRequest } from "../models/requests";
 import { ILoginResponse, IRegisterResponse } from "../models/responses";
 
-const jwtSecret = config.JWT_SECRET as string;
-const createSendToken = async (user: IUser, res: Response) => {
-  const { name, email, id } = user;
-  const token = jwt.sign({ name, email, id }, jwtSecret, {
-    expiresIn: "1d",
-  });
-  if (config.env === "production") cookieOptions.secure = true;
-  res.cookie("jwt", token, cookieOptions);
-
-  return token;
-};
-
-const COOKIE_EXPIRATION_DAYS = 90; // cookie expiration in days
-const expirationDate = new Date(
-  Date.now() + COOKIE_EXPIRATION_DAYS * 24 * 60 * 60 * 1000
-);
-const cookieOptions = {
-  expires: expirationDate,
-  secure: false,
-  httpOnly: true,
-};
 
 const register = async (req: any, res: any) => {
   try {
@@ -44,9 +22,10 @@ const register = async (req: any, res: any) => {
     const user = await userService.createUser({
       active: false,
       deleted: false,
+      verified: false,
       name: request.name,
       email: request.email,
-      password: await encryptPassword(request.password)
+      password: await encryptPassword(request.password),
     });
     if (user) {
       const Response: IBaseResponse<IRegisterResponse> = {
@@ -85,10 +64,22 @@ const login = async (req: any, res: any) => {
     if (!user || !(await isPasswordMatch(request.password, user.password))) {
       throw new ApiError(400, "Incorrect email or password");
     }
-    if (user.active) {
+    if (!user.active || !user.verified || user.deleted) {
       throw new ApiError(400, "User is not active");
     }
-    const token = await createSendToken(user!, res);
+    const token = await userService.createSendToken({ email: user.email, id: user.id, name: user.name });
+
+    const COOKIE_EXPIRATION_DAYS = 90; // cookie expiration in days
+    const expirationDate = new Date(
+      Date.now() + COOKIE_EXPIRATION_DAYS * 24 * 60 * 60 * 1000
+    );
+    const cookieOptions = {
+      expires: expirationDate,
+      secure: false,
+      httpOnly: true,
+    };
+    if (config.env === "production") cookieOptions.secure = true;
+    res.cookie("jwt", token, cookieOptions);
     const Response: IBaseResponse<ILoginResponse> = {
       data: {
         id: user.id,

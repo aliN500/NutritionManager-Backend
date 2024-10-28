@@ -8,12 +8,14 @@ export interface IUser extends Document {
   createdAt: Date;
   updatedAt: Date;
   active: boolean,
+  verified: boolean,
   deleted: boolean;
 }
 export interface UserModel {
   name: string;
   email: string;
   password: string;
+  verified: boolean,
   active: boolean,
   deleted: boolean;
 }
@@ -41,6 +43,9 @@ const UserSchema: Schema = new Schema(
       minlength: 8,
     },
     active: {
+      type: Boolean,
+    },
+    verified: {
       type: Boolean,
     },
     deleted: {
