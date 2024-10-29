@@ -33,7 +33,7 @@ class UsersService {
       this.logger.info(`User created: ${user}`);
 
       const token = await this.createSendToken({ email: user.email, name: user.name, id: createdUser.id });
-      const verificationLink: string = `${config.BACK_END_LINK}verification?token=` + token;
+      const verificationLink: string = `${config.BACK_END_LINK}/verification?token=` + token;
 
       await this.mailer.sendConfirmationEmail(user.email, verificationLink);
       this.logger.info(`Confirmation link sent: ${user}`);

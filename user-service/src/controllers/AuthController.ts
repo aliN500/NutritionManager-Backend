@@ -124,7 +124,12 @@ const forgetPassword = async (req: any, res: any) => {
     }
     const token = await userService.createSendToken({ email: user.email, id: user.id, name: user.name });
     Mailer.sendResetPassword(user.email, `${config.BACK_END_LINK}/verify-reset-password?token=${token}`);
-    return res.json({ Response: true });
+    const Response: IBaseResponse<boolean> = {
+      data: true,
+      message: "Forget password email sent successfully!",
+      status: 200,
+    };
+    return res.json(Response);
   } catch (error: any) {
     return res.json({
       status: 500,

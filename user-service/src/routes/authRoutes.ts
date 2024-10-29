@@ -7,6 +7,6 @@ userRouter.post("/register", register);
 userRouter.post("/login", login);
 userRouter.get("/verification", verifyUser);
 userRouter.post("/forget-password", forgetPassword);
-userRouter.post("/verify-reset-password", verifyReset);
+userRouter.get("/verify-reset-password", verifyReset);
 
 export default userRouter;
