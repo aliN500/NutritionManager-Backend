@@ -46,6 +46,17 @@ class UsersService {
       );
     }
   }
+  async resetPassword(email: string, password: string): Promise<boolean> {
+    try {
+      const createdUser = await this.usersRepository.updateOne({ email }, { password });
+      return createdUser.modifiedCount === 1;
+    } catch (ex) {
+      throw new Error(
+        `failed to reset user password: ${email}, ${(ex as Error).message
+        }`
+      );
+    }
+  }
 
   async verifyUser(token: string): Promise<IUser | null> {
     if (!token)

@@ -4,7 +4,7 @@ import config from "../config/config";
 import { IBaseResponse } from "../models/IBaseResponse";
 import { Mailer } from "../services/MailService";
 import userService from "../services/UsersService";
-import { IForgetPasswordRequest, ILoginRequest, IRegisterRequest } from "../models/requests";
+import { IForgetPasswordRequest, ILoginRequest, IRegisterRequest, IResetPasswordRequest } from "../models/requests";
 import { ILoginResponse, IRegisterResponse } from "../models/responses";
 
 
@@ -138,6 +138,30 @@ const forgetPassword = async (req: any, res: any) => {
   }
 };
 
+const resetPassword = async (req: any, res: any) => {
+  try {
+    req = req as Request;
+    res = (res as Response);
+    const request = req.body as IResetPasswordRequest;
+    const user = await userService.findByEmail(request.email);
+    if (!user) {
+      throw new ApiError(400, "Invalid email");
+    }
+    const result = await userService.resetPassword(user.email, await encryptPassword(request.password));
+    const Response: IBaseResponse<boolean> = {
+      data: result,
+      message: "Password was reset successfully!",
+      status: 200,
+    };
+    return res.json(Response);
+  } catch (error: any) {
+    return res.json({
+      status: 500,
+      message: error.message,
+    });
+  }
+};
+
 const verifyReset = async (req: any, res: any) => {
   try {
     req = req as Request;
@@ -145,7 +169,7 @@ const verifyReset = async (req: any, res: any) => {
     const token = req.query.token;
     const user = await userService.verifyUser(token);
     if (user && user.id) {
-      return res.redirect(`${config.FRONT_END_URL}/reset-password`);
+      return res.redirect(`${config.FRONT_END_URL}/reset-password?email=${user.email}`);
     }
     return res.json({ Response: false });
   } catch (error: any) {
@@ -156,4 +180,4 @@ const verifyReset = async (req: any, res: any) => {
   }
 };
 
-export { verifyUser, register, login, forgetPassword, verifyReset };
+export { verifyUser, register, login, forgetPassword, verifyReset, resetPassword };
