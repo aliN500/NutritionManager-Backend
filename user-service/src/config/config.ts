@@ -21,6 +21,7 @@ const corsOptions = {
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
 };
 export default {
+  FRONT_END_URL,
   YOUR_COMPANY_LOGO_URL,
   BACK_END_LINK,
   APPNAME,

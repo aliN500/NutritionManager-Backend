@@ -116,21 +116,14 @@ const verifyUser = async (req: any, res: any) => {
 const forgetPassword = async (req: any, res: any) => {
   try {
     req = req as Request;
-    res = res as Response;
+    res = (res as Response);
     const request = req.body as IForgetPasswordRequest;
     const user = await userService.findByEmail(request.email);
     if (!user) {
-      throw new ApiError(400, "Incorrect email");
+      throw new ApiError(400, "Invalid email");
     }
-    const mailOptions = {
-      from: "Nutrition manager",
-      to: user.email,
-      subject: "Reset password",
-      text: "This is my first email. I am so excited!",
-    };
-
-    Mailer.sendMessage(mailOptions);
-
+    const token = await userService.createSendToken({ email: user.email, id: user.id, name: user.name });
+    Mailer.sendResetPassword(user.email, `${config.BACK_END_LINK}/verify-reset-password?token=${token}`);
     return res.json({ Response: true });
   } catch (error: any) {
     return res.json({
@@ -140,4 +133,22 @@ const forgetPassword = async (req: any, res: any) => {
   }
 };
 
-export { verifyUser, register, login, forgetPassword };
+const verifyReset = async (req: any, res: any) => {
+  try {
+    req = req as Request;
+    res = res as Response;
+    const token = req.query.token;
+    const user = await userService.verifyUser(token);
+    if (user && user.id) {
+      return res.redirect(`${config.FRONT_END_URL}/reset-password`);
+    }
+    return res.json({ Response: false });
+  } catch (error: any) {
+    return res.json({
+      status: 500,
+      message: error.message,
+    });
+  }
+};
+
+export { verifyUser, register, login, forgetPassword, verifyReset };
