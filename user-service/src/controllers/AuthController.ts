@@ -23,6 +23,7 @@ const register = async (req: any, res: any) => {
       deleted: false,
       verified: false,
       name: request.name,
+      confirmToken: "",
       resetToken: "",
       email: request.email,
       password: await encryptPassword(request.password),

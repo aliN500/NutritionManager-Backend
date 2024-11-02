@@ -32,10 +32,24 @@ class UsersService {
     return result.modifiedCount;
   }
 
-  async findByEmailAndToken(email: string, token: string): Promise<IUser | null> {
+  async updateConfirmTokenByEmail(email: string, token: string): Promise<number> {
+    const result = await this.usersRepository.updateOne({ email }, { confirmToken: token });
+    return result.modifiedCount;
+  }
+
+  async findByEmailAndResetToken(email: string, token: string): Promise<IUser | null> {
     return await this.usersRepository.findOne({
       email,
       resetToken: token
+    }).select(
+      "-password"
+    );
+  }
+
+  async findByEmailAndConfirmToken(email: string, token: string): Promise<IUser | null> {
+    return await this.usersRepository.findOne({
+      email,
+      confirmToken: token
     }).select(
       "-password"
     );
@@ -53,15 +67,14 @@ class UsersService {
 
       const token = await this.createSendToken({ email: user.email, name: user.name, id: createdUser.id });
       const verificationLink: string = `${config.BACK_END_LINK}/verification?token=` + token;
-
+      userService.updateConfirmTokenByEmail(user.email, token);
       await this.mailer.sendConfirmationEmail(user.email, verificationLink);
       this.logger.info(`Confirmation link sent: ${user}`);
 
       return createdUser;
     } catch (ex) {
       throw new Error(
-        `failed to create user: ${JSON.stringify(user)}, ${(ex as Error).message
-        }`
+        `failed to create user: ${JSON.stringify(user)}, ${(ex as Error).message}`
       );
     }
   }
@@ -83,11 +96,12 @@ class UsersService {
 
     const decoded = this.decodeToken(token);
     if (decoded && decoded.email && decoded.name && decoded.id) {
-      const user = await this.findByEmail(decoded.email);
+      const user = await this.findByEmailAndConfirmToken(decoded.email, token);
       if (user && !user?.verified || !user?.active) {
-        const res = await this.usersRepository.updateOne({ email: decoded.email, _id: decoded.id }, { verified: true, active: true });
-      }
-      return user;
+        const res = await this.usersRepository.updateOne({ email: decoded.email, _id: decoded.id }, { verified: true, active: true, confirmToken: null });
+        return user;
+      } else
+        throw new Error("Invalid token");
     }
     else {
       throw new Error("Invalid token");
@@ -99,7 +113,7 @@ class UsersService {
       throw new Error("Invalid token");
     const decoded = this.decodeToken(token);
     if (decoded && decoded.email && decoded.id) {
-      const user = await this.findByEmailAndToken(decoded.email, token);
+      const user = await this.findByEmailAndResetToken(decoded.email, token);
       return user;
     }
     else {

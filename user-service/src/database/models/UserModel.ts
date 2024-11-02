@@ -6,6 +6,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   resetToken: string;
+  confirmToken: string;
   createdAt: Date;
   updatedAt: Date;
   active: boolean,
@@ -15,6 +16,7 @@ export interface IUser extends Document {
 export interface UserModel {
   name: string;
   email: string;
+  confirmToken: string;
   password: string;
   resetToken: string;
   verified: boolean,
@@ -39,6 +41,10 @@ const UserSchema: Schema = new Schema(
       validate: [validator.isEmail, "Please provide a valid email."],
     },
     resetToken: {
+      type: String,
+      trim: true
+    },
+    confirmToken: {
       type: String,
       trim: true
     },
