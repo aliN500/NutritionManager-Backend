@@ -23,6 +23,7 @@ const register = async (req: any, res: any) => {
       deleted: false,
       verified: false,
       name: request.name,
+      resetToken: "",
       email: request.email,
       password: await encryptPassword(request.password),
     });
@@ -122,14 +123,41 @@ const forgetPassword = async (req: any, res: any) => {
     if (!user) {
       throw new ApiError(400, "Invalid email");
     }
-    const token = await userService.createSendToken({ email: user.email, id: user.id, name: user.name });
-    Mailer.sendResetPassword(user.email, `${config.BACK_END_LINK}/verify-reset-password?token=${token}`);
-    const Response: IBaseResponse<boolean> = {
-      data: true,
-      message: "Forget password email sent successfully!",
-      status: 200,
-    };
-    return res.json(Response);
+    let response: IBaseResponse<boolean>;
+    if (!user.resetToken) {
+      const token = await userService.createSendToken({ email: user.email, id: user.id, name: user.name });
+      const result = await userService.updateResetTokenByEmail(request.email, token);
+      response = {
+        data: true,
+        message: "Forget password email sent successfully!",
+        status: 200,
+      };
+      if (result === 1) {
+        Mailer.sendResetPassword(user.email, `${config.BACK_END_LINK}/verify-reset-password?token=${token}`);
+        return res.json(response);
+      } else {
+        response = {
+          data: false,
+          message: "Unauthorized user!",
+          status: 401,
+        };
+        return res.json(response);
+      }
+    } else {
+      const userData = userService.decodeToken(user.resetToken);
+      if (userData && userData.id === user.id) {
+        response = {
+          data: true,
+          message: "Forget password email already been sent, please  check your inbox!",
+          status: 200,
+        };
+        return res.json(response);
+      } else {
+        //clear token
+        userService.clearResetToken(user.email);
+        return forgetPassword(req, res);
+      }
+    }
   } catch (error: any) {
     return res.json({
       status: 500,
@@ -138,7 +166,7 @@ const forgetPassword = async (req: any, res: any) => {
   }
 };
 
-const resetPassword = async (req: any, res: any) => {
+const resetPassword = async (req: any, res: any): Promise<any> => {
   try {
     req = req as Request;
     res = (res as Response);
@@ -147,12 +175,26 @@ const resetPassword = async (req: any, res: any) => {
     if (!user) {
       throw new ApiError(400, "Invalid email");
     }
-    const result = await userService.resetPassword(user.email, await encryptPassword(request.password));
-    const Response: IBaseResponse<boolean> = {
-      data: result,
-      message: "Password was reset successfully!",
-      status: 200,
-    };
+    if (user.resetToken) {
+      const decodedUser = userService.decodeToken(user.resetToken);
+      if (decodedUser && decodedUser.id === user.id) {
+        if (request.password !== request.confirmPassword) {
+          throw new ApiError(400, "Password and confirm password does not match");
+        }
+        const result = await userService.resetPassword(user.email, await encryptPassword(request.password));
+        const response: IBaseResponse<boolean> = {
+          data: result,
+          message: "Password was reset successfully!",
+          status: 200,
+        };
+        return res.json(response);
+      } else {
+        throw new ApiError(400, "Invalid token");
+      }
+    } else {
+      throw new ApiError(400, "Invalid token");
+    }
+
     return res.json(Response);
   } catch (error: any) {
     return res.json({
@@ -167,7 +209,7 @@ const verifyReset = async (req: any, res: any) => {
     req = req as Request;
     res = res as Response;
     const token = req.query.token;
-    const user = await userService.verifyUser(token);
+    const user = await userService.verifyUserPassword(token);
     if (user && user.id) {
       return res.redirect(`${config.FRONT_END_URL}/reset-password?email=${user.email}`);
     }

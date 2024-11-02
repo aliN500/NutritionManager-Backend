@@ -6,9 +6,9 @@ import User, { UserModel } from "../database/models/UserModel";
 import config from "../config/config";
 import jwt from "jsonwebtoken";
 class UsersService {
-  usersRepository: Model<IUser>;
-  mailer: MailService;
-  logger: Logger;
+  private usersRepository: Model<IUser>;
+  private mailer: MailService;
+  private logger: Logger;
 
   constructor(data: { usersRepository: Model<IUser>, mailer: MailService }) {
     this.usersRepository = data.usersRepository;
@@ -25,6 +25,25 @@ class UsersService {
       return await this.usersRepository.findOne({ email }).select(
         "-password"
       );
+  }
+
+  async updateResetTokenByEmail(email: string, token: string): Promise<number> {
+    const result = await this.usersRepository.updateOne({ email }, { resetToken: token });
+    return result.modifiedCount;
+  }
+
+  async findByEmailAndToken(email: string, token: string): Promise<IUser | null> {
+    return await this.usersRepository.findOne({
+      email,
+      resetToken: token
+    }).select(
+      "-password"
+    );
+  }
+
+  async clearResetToken(email: string): Promise<number> {
+    const result = await this.usersRepository.updateOne({ email }, { resetToken: null });
+    return result.modifiedCount;
   }
 
   async createUser(user: UserModel): Promise<IUser> {
@@ -48,7 +67,7 @@ class UsersService {
   }
   async resetPassword(email: string, password: string): Promise<boolean> {
     try {
-      const createdUser = await this.usersRepository.updateOne({ email }, { password });
+      const createdUser = await this.usersRepository.updateOne({ email }, { password, resetToken: null });
       return createdUser.modifiedCount === 1;
     } catch (ex) {
       throw new Error(
@@ -65,7 +84,6 @@ class UsersService {
     const decoded = this.decodeToken(token);
     if (decoded && decoded.email && decoded.name && decoded.id) {
       const user = await this.findByEmail(decoded.email);
-      console.log({ user, decoded });
       if (user && !user?.verified || !user?.active) {
         const res = await this.usersRepository.updateOne({ email: decoded.email, _id: decoded.id }, { verified: true, active: true });
       }
@@ -76,6 +94,18 @@ class UsersService {
     }
   }
 
+  async verifyUserPassword(token: string): Promise<IUser | null> {
+    if (!token)
+      throw new Error("Invalid token");
+    const decoded = this.decodeToken(token);
+    if (decoded && decoded.email && decoded.id) {
+      const user = await this.findByEmailAndToken(decoded.email, token);
+      return user;
+    }
+    else {
+      throw new Error("Invalid token");
+    }
+  }
   async createSendToken(user: { id: string, email: string, name: string }): Promise<string> {
     const jwtSecret = config.JWT_SECRET as string;
     const { name, email, id } = user;
