@@ -46,13 +46,16 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
     const authHeader = req.headers.authorization;
     if (authHeader) {
         const token = authHeader.split(" ")[1];
-        jwt.verify(token, config.JWT_SECRET as string, (err, user) => {
-            if (err) {
-                return res.sendStatus(403);
-            }
-            (req as any).user = user;
-            next();
-        });
+        if (token)
+            jwt.verify(token, config.JWT_SECRET as string, (err, user) => {
+                if (err) {
+                    return res.sendStatus(403);
+                }
+                (req as any).user = user;
+                next();
+            });
+        else
+            res.sendStatus(401);
     } else {
         res.sendStatus(401);
     }

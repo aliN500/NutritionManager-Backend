@@ -15,7 +15,11 @@ class UsersService {
     this.mailer = data.mailer;
     this.logger = new Logger("UsersService");
   }
-
+  async getProfile(id: string): Promise<IUser | null> {
+    return await this.usersRepository.findById(id).select(
+      "-password"
+    );
+  }
   async findByEmail(email: string, includePassword: boolean = false): Promise<IUser | null> {
     if (includePassword)
       return await this.usersRepository.findOne({ email }).select(

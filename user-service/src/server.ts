@@ -1,6 +1,6 @@
 import express, { Express } from "express";
 import { Server } from "http";
-import userRouter from "./routes/authRoutes";
+import { userRouter, profileRouter } from "./routes";
 import { errorConverter, errorHandler } from "./middleware";
 import { connectDB } from "./database";
 import config from "./config/config";
@@ -15,6 +15,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors(config.corsOptions));
 
 app.use(userRouter);
+app.use('/profile', profileRouter);
 
 app.use(errorConverter);
 app.use(errorHandler);
