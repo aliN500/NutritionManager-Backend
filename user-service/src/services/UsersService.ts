@@ -20,6 +20,10 @@ class UsersService {
       "-password"
     );
   }
+
+  async updateProfile(id: string, data: { name: string, email: string }): Promise<IUser | null> {
+    return await this.usersRepository.findByIdAndUpdate(id, {});
+  }
   async findByEmail(email: string, includePassword: boolean = false): Promise<IUser | null> {
     if (includePassword)
       return await this.usersRepository.findOne({ email }).select(
